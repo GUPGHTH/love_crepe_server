@@ -27,15 +27,28 @@ app.get('/', (req, res) => {
 app.post('/getmenu', (req, res) => {
 
     const lang = req.body.lang;
+    const Type = req.body.Type;
+    var condi = ""
+    if (Type === "all"){
+        condi = "Type";
+    }else if(Type === "food"){
+        condi = "3";
+    }else if(Type === "drink"){
+        condi = "2"
+    }else if(Type === "dessert"){
+        condi = "1"
+    }else{
+
+    }
     var sql_command = ""
     if (lang === "EN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE 1";
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "KR") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` FROM `menulist` WHERE 1";
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "CN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` FROM `menulist` WHERE 1";
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "TH") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE 1";
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     } else {
         sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE 1";
     }
