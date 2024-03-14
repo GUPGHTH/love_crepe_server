@@ -38,7 +38,7 @@ app.post('/getmenu', (req, res) => {
     }else if(Type === "dessert"){
         condi = "1"
     }else{
-
+        condi = "Type";
     }
     var sql_command = ""
     if (lang === "EN") {
@@ -50,7 +50,7 @@ app.post('/getmenu', (req, res) => {
     } else if (lang === "TH") {
         sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     } else {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE 1";
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     }
     try {
         connection.query(sql_command, (err, results) => {
