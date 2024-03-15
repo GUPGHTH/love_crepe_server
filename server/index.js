@@ -43,15 +43,15 @@ app.post('/getmenu', (req, res) => {
     }
     var sql_command = ""
     if (lang === "EN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` , img FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "KR") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` , img FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "CN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` , img FROM `menulist` WHERE Type = "+condi;
     } else if (lang === "TH") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` , img FROM `menulist` WHERE Type = "+condi;
     } else {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
+        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` , img FROM `menulist` WHERE Type = "+condi;
     }
     try {
         connection.query(sql_command+" AND Status != 1", (err, results) => {
@@ -72,15 +72,15 @@ app.post('/getDetail', (req, res) => {
     const MenuID = req.body.MenuID;
     var sql_command = ""
     if (lang === "EN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
+        sql_command = "SELECT `MenuID`, img,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
     } else if (lang === "KR") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
+        sql_command = "SELECT `MenuID`, img,`Price`,`Status`,`Type`,`KR_Name` AS `Name`,`KR_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
     } else if (lang === "CN") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
+        sql_command = "SELECT `MenuID`, img,`Price`,`Status`,`Type`,`CN_Name` AS `Name`,`CN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
     } else if (lang === "TH") {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
+        sql_command = "SELECT `MenuID`, img,`Price`,`Status`,`Type`,`TH_Name` AS `Name`,`TH_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
     } else {
-        sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
+        sql_command = "SELECT `MenuID`, img,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE `MenuID` = " + MenuID;
     }
     try {
         connection.query(sql_command, (err, results) => {
@@ -408,7 +408,7 @@ app.post('/get_cart',async (req,res) =>{
 
 app.post('/delcart',async (req ,res) =>{
     const CartID = req.body.CartID;
-    const ch = await getdatafromsql(`UPDATE cart SET status = 99 WHERE CartID = ${CartID}`);
+    const ch = await getdatafromsql(`UPDATE cart SET status = 99,OrderID = 2 WHERE CartID = ${CartID}`);
     res.send("ok");
     
 })
@@ -462,7 +462,7 @@ app.post('/payment_detail',async (req,res) =>{
     FROM cart 
     INNER JOIN menulist ON cart.MenuID = menulist.MenuID
     INNER JOIN ordertable ON cart.OrderID = ordertable.OrderID
-    WHERE ordertable.OrderTable = ${table} AND ordertable.Status IN (1,2,3)`;
+    WHERE ordertable.OrderTable = ${table} AND cart.status IN (1,2,3)`;
 
     if (lang === "KR"){
         lang_num = 1
@@ -497,17 +497,20 @@ app.post('/sum_table',async (req,res) =>{
 
 
 
-app.post('/payment', (req, res) => {
+app.post('/payment', async (req, res) => {
     const table = req.body.Table;
     const currentDate = new Date();
     const year = currentDate.getFullYear();
     const month = ('0' + (currentDate.getMonth() + 1)).slice(-2); // Adding 1 because getMonth() returns 0-based index
     const day = ('0' + currentDate.getDate()).slice(-2);
-    var date = String(`${year}-${month}-${day}`);
+
 
     // console.log(date);
-    var sql = "";
-
+    var sql = `UPDATE cart SET day = ${day} ,month = ${month}, year = ${year}, status = 4 WHERE TableID = ${table} AND status != 4`;
+    const ch = await getdatafromsql(sql);
+    var sql = `UPDATE ordertable SET Status = 2 WHERE OrderTable = ${table} AND Status != 2`;
+    const cha = await getdatafromsql(sql);
+    res.send("ok");
 
 });
 
@@ -663,6 +666,71 @@ app.post('/test',async (req,res) =>{
 
     res.send(parsedX);
 })
+
+app.post("/dash_day",async (req,res) =>{
+    const lang = req.body.lang;
+
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = ('0' + (currentDate.getMonth() + 1)).slice(-2); // Adding 1 because getMonth() returns 0-based index
+    const day = ('0' + currentDate.getDate()).slice(-2);
+    // console.log(day);
+
+
+    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.day = ${day}),0) AS total_price, 
+    COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.day = ${day}),0) AS total_Amount 
+    FROM menulist 
+    WHERE NOT(menulist.MenuID = 3) 
+    ORDER BY total_price DESC`
+
+    const ch = await getdatafromsql(sql);
+    res.send(ch)
+})
+
+app.post("/dash_month",async (req,res) =>{
+    const lang = req.body.lang;
+
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = ('0' + (currentDate.getMonth() + 1)).slice(-2); // Adding 1 because getMonth() returns 0-based index
+    const day = ('0' + currentDate.getDate()).slice(-2);
+    // console.log(day);
+
+
+    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.month = ${month}),0) AS total_price, 
+    COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.month = ${month}),0) AS total_Amount 
+    FROM menulist 
+    WHERE NOT(menulist.MenuID = 3) 
+    ORDER BY total_price DESC`
+
+    const ch = await getdatafromsql(sql);
+    res.send(ch)
+})
+
+app.post("/dash_year",async (req,res) =>{
+    const lang = req.body.lang;
+
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = ('0' + (currentDate.getMonth() + 1)).slice(-2); // Adding 1 because getMonth() returns 0-based index
+    const day = ('0' + currentDate.getDate()).slice(-2);
+    // console.log(day);
+
+
+    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.year = ${year}),0) AS total_price, 
+    COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.year = ${year}),0) AS total_Amount 
+    FROM menulist 
+    WHERE NOT(menulist.MenuID = 3) 
+    ORDER BY total_price DESC`
+
+    const ch = await getdatafromsql(sql);
+    res.send(ch)
+})
+
+
 
 
 
