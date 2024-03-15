@@ -54,7 +54,7 @@ app.post('/getmenu', (req, res) => {
         sql_command = "SELECT `MenuID`,`Price`,`Status`,`Type`,`EN_Name` AS `Name`,`EN_Description` AS `Des` FROM `menulist` WHERE Type = "+condi;
     }
     try {
-        connection.query(sql_command, (err, results) => {
+        connection.query(sql_command+" AND Status != 1", (err, results) => {
             if (err) {
                 res.send(err)
             }
@@ -281,27 +281,37 @@ app.post('/addcart',async (req, res) => {
     const op = req.body.Option;
     var option_select = "";
     var first_append = true;
-    
-    // var string_option = "";
-    op.forEach(op => {
-        if (op.status == 1) {
-            if (first_append) {
-                first_append = false;
-                option_select = op.OptionID;
-            } else {
-                option_select = option_select + "," + op.OptionID;
+    var tmp = [];
+        op.forEach(op => {
+            if (op.status == 1) {
+                if (first_append) {
+                    first_append = false;
+                    option_select = op.OptionID;
+                } else {
+                    option_select = option_select + "," + op.OptionID;
+                }
             }
-        }
-        // console.log(`OptionID: ${op.OptionID}, Description: ${op.Description}, Status: ${op.status}`);
-    });
+            // console.log(`OptionID: ${op.OptionID}, Description: ${op.Description}, Status: ${op.status}`);
+        });
+
+    if (first_append){
+        option_select = option_select+"3";
+    }
+
+
+
+        
+    // var string_option = "";
+    
     const string_option = await getOptionall(option_select);
     // console.log(string_option);
     const stoption = JSON.parse(string_option)
+    console.log(stoption)
     const objectsArray = stoption.map(item => JSON.parse(item));
     const jsonString = JSON.stringify(objectsArray);
-    console.log(string_option);
-    
-    var sql = `INSERT INTO cart(TableID,MenuID, jsOption,Amount) VALUES (${Table},${MenuID},?,${amount})`;
+    // console.log(string_option);
+    //INSERT INTO cart(`MenuID`, `TableID`, `Amount`, `Price`) VALUES (2,2,2,2 * (SELECT Price FROM menulist WHERE MenuID = 2))
+    var sql = `INSERT INTO cart(TableID,MenuID, jsOption,Amount,Price) VALUES (${Table},${MenuID},?,${amount},${amount} * (SELECT Price FROM menulist WHERE MenuID = ${MenuID}))`;
 
     try {
         // console.log(sql);
@@ -359,6 +369,50 @@ app.post('/order', (req, res) => {
     res.send("ok");
 });
 
+app.post('/get_cart',async (req,res) =>{
+    const lang = req.body.lang;
+    const table = req.body.Table;
+    //const cart = req.body.cartID;
+    var lang_num = 0;
+    var sql_command = "";
+    //En kr cn th
+    if (lang === "KR"){
+        lang_num = 1
+        sql_command = `SELECT cart.Price , cart.CartID , menulist.KR_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.TableID = ${table} AND cart.status = 0`;
+    }
+    else if (lang === "CN"){
+        lang_num = 2
+        sql_command = `SELECT cart.Price ,cart.CartID , menulist.CN_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.TableID = ${table} AND cart.status = 0`;
+    }
+    else if (lang === "TH"){
+        sql_command = `SELECT cart.Price ,cart.CartID , menulist.TH_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.TableID = ${table} AND cart.status = 0`;
+        lang_num = 3
+    }else{
+        lang_num = 0;
+        sql_command = `SELECT cart.Price ,cart.CartID , menulist.EN_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.TableID = ${table} AND cart.status = 0`;
+    }
+    const ch = await getdatafromsql(sql_command);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
+
+    res.send(parsedX);
+
+})
+
+app.post('/delcart',async (req ,res) =>{
+    const CartID = req.body.CartID;
+    const ch = await getdatafromsql(`UPDATE cart SET status = 99 WHERE CartID = ${CartID}`);
+    res.send("ok");
+    
+})
+
 app.post('/finishMenu', (req, res) => {
     const menuID = req.body.MenuID;
     const OrderID = req.body.OrderID;
@@ -398,6 +452,48 @@ app.post('/serve', (req, res) => {
         pass;
     }
 });
+
+
+app.post('/payment_detail',async (req,res) =>{
+    const table = req.body.TableID;
+    const lang = req.body.lang
+    var lang_num=0;
+    var sql_command = `SELECT menulist.${lang}_Name AS Name , cart.jsOption AS optional , cart.Amount , cart.Price 
+    FROM cart 
+    INNER JOIN menulist ON cart.MenuID = menulist.MenuID
+    INNER JOIN ordertable ON cart.OrderID = ordertable.OrderID
+    WHERE ordertable.OrderTable = ${table} AND ordertable.Status IN (1,2,3)`;
+
+    if (lang === "KR"){
+        lang_num = 1
+    }
+    else if (lang === "CN"){
+        lang_num = 2
+    }
+    else if (lang === "TH"){
+        lang_num = 3
+    }else{
+        lang_num = 0;
+    }
+    
+    var ch = await getdatafromsql(sql_command);
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
+    res.send(parsedX);
+})
+
+app.post('/sum_table',async (req,res) =>{
+    const table = req.body.Table;
+    var sql = `SELECT SUM(Price) AS TotalPrice FROM cart WHERE TableID = ${table} AND status IN (1,2,3)`;
+    const ch = await getdatafromsql(sql);
+    res.send(ch);
+})
 
 
 
@@ -499,7 +595,7 @@ async function getOptionfromID(sql_command_ID){
             } else {
                 const resultValue = results;
                 // console.log('Result:', resultValue);
-                console.log(JSON.stringify(resultValue));
+                // console.log(JSON.stringify(resultValue));
                 // console.log(resultValue);
                 resolve (JSON.stringify(resultValue));
             }
