@@ -677,7 +677,7 @@ app.post("/dash_day",async (req,res) =>{
     // console.log(day);
 
 
-    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    var sql = `SELECT menulist.${lang}_Name AS Name,menulist.MenuID, 
     COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.day = ${day}),0) AS total_price, 
     COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.day = ${day}),0) AS total_Amount 
     FROM menulist 
@@ -698,7 +698,7 @@ app.post("/dash_month",async (req,res) =>{
     // console.log(day);
 
 
-    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    var sql = `SELECT menulist.${lang}_Name AS Name,menulist.MenuID, 
     COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.month = ${month}),0) AS total_price, 
     COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.month = ${month}),0) AS total_Amount 
     FROM menulist 
@@ -719,7 +719,7 @@ app.post("/dash_year",async (req,res) =>{
     // console.log(day);
 
 
-    var sql = `SELECT menulist.${lang}_Name,menulist.MenuID, 
+    var sql = `SELECT menulist.${lang}_Name AS Name,menulist.MenuID, 
     COALESCE((SELECT SUM(cart.Price) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.year = ${year}),0) AS total_price, 
     COALESCE((SELECT SUM(cart.Amount) FROM cart WHERE cart.MenuID = menulist.MenuID AND cart.status = 4 AND cart.year = ${year}),0) AS total_Amount 
     FROM menulist 
