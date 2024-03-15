@@ -5,6 +5,7 @@ const sql = require('mysql');
 const core = require('cors');
 const body_parser = require('body-parser');
 const path = require('path');
+const { rejects } = require('assert');
 
 const PORT = env.PORT;
 
@@ -126,101 +127,162 @@ app.post('/getOption', (req, res) => {
 
 });
 //SELECT menulist.EN_Name AS Name , cart.TableID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.MenuID = 2 AND cart.status = 1
-app.post('/food_bar', (req, res) => {
+app.post('/food_bar',async (req, res) => {
     const lang = req.body.lang;
-    if (lang === "EN") {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.cartID, cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 1`;
-    } else if (lang === "KR") {
-        sql_command = `SELECT menulist.KR_Name AS Name , cart.TableID , cart.cartID, cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 1`;
-    } else if (lang === "CN") {
-        sql_command = `SELECT menulist.CN_Name AS Name , cart.TableID , cart.cartID, cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 1`;
-    } else if (lang === "TH") {
-        sql_command = `SELECT menulist.TH_Name AS Name , cart.TableID , cart.cartID, cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 1`;
-    } else {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.cartID, cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 1`;
+    //const cart = req.body.cartID;
+    var lang_num = 0;
+    var sql_command = "";
+    //En kr cn th
+    if (lang === "KR"){
+        lang_num = 1
+        sql_command = `SELECT cart.CartID , menulist.KR_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 3 AND cart.status = 1`;
     }
-    try {
-        // console.log(sql_command);
-        connection.query(sql_command, (err, results) => {
-            if (err) {
-                res.send(err)
-            }
-            else {
-                res.send(results);
-            }
-        });
-    } catch (err) {
-        res.send(err.massage);
+    else if (lang === "CN"){
+        lang_num = 2
+        sql_command = `SELECT cart.CartID , menulist.CN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 3 AND cart.status = 1`;
     }
+    else if (lang === "TH"){
+        sql_command = `SELECT cart.CartID , menulist.TH_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 3 AND cart.status = 1`;
+        lang_num = 3
+    }else{
+        lang_num = 0;
+        sql_command = `SELECT cart.CartID , menulist.EN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 3 AND cart.status = 1`;
+    }
+    const ch = await getdatafromsql(sql_command);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
 
-});
-
-app.post('/drink_bar', (req, res) => {
-    const lang = req.body.lang;
-    if (lang === "EN") {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.OptionID , cart.cartID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 2`;
-    } else if (lang === "KR") {
-        sql_command = `SELECT menulist.KR_Name AS Name , cart.TableID , cart.OptionID , cart.cartID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 2`;
-    } else if (lang === "CN") {
-        sql_command = `SELECT menulist.CN_Name AS Name , cart.TableID , cart.OptionID , cart.cartID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 2`;
-    } else if (lang === "TH") {
-        sql_command = `SELECT menulist.TH_Name AS Name , cart.TableID , cart.OptionID , cart.cartID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 2`;
-    } else {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.OptionID , cart.cartID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 1 AND menulist.Type = 2`;
-    }
-    try {
-        // console.log(sql_command);
-        connection.query(sql_command, (err, results) => {
-            if (err) {
-                res.send(err)
-            }
-            else {
-                res.send(results);
-            }
-        });
-    } catch (err) {
-        res.send(err.massage);
-    }
+    res.send(parsedX);
 
 });
 
 
-app.post('/serve_bar', (req, res) => {
+
+app.post('/crepe_bar',async (req, res) => {
     const lang = req.body.lang;
-    if (lang === "EN") {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.cartID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
-    } else if (lang === "KR") {
-        sql_command = `SELECT menulist.KR_Name AS Name , cart.TableID , cart.cartID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
-    } else if (lang === "CN") {
-        sql_command = `SELECT menulist.CN_Name AS Name , cart.TableID , cart.cartID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
-    } else if (lang === "TH") {
-        sql_command = `SELECT menulist.TH_Name AS Name , cart.TableID , cart.cartID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
-    } else {
-        sql_command = `SELECT menulist.EN_Name AS Name , cart.TableID , cart.cartID , cart.OptionID FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
+    //const cart = req.body.cartID;
+    var lang_num = 0;
+    var sql_command = "";
+    //En kr cn th
+    if (lang === "KR"){
+        lang_num = 1
+        sql_command = `SELECT cart.CartID , menulist.KR_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 1 AND cart.status = 1`;
     }
-    try {
-        // console.log(sql_command);
-        connection.query(sql_command, (err, results) => {
-            if (err) {
-                res.send(err)
-            }
-            else {
-                res.send(results);
-            }
-        });
-    } catch (err) {
-        res.send(err.massage);
+    else if (lang === "CN"){
+        lang_num = 2
+        sql_command = `SELECT cart.CartID , menulist.CN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 1 AND cart.status = 1`;
     }
+    else if (lang === "TH"){
+        sql_command = `SELECT cart.CartID , menulist.TH_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 1 AND cart.status = 1`;
+        lang_num = 3
+    }else{
+        lang_num = 0;
+        sql_command = `SELECT cart.CartID , menulist.EN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 1 AND cart.status = 1`;
+    }
+    const ch = await getdatafromsql(sql_command);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
+
+    res.send(parsedX);
 
 });
 
-app.post('/addcart', (req, res) => {
+app.post('/drink_bar', async (req, res) => {
+    const lang = req.body.lang;
+    //const cart = req.body.cartID;
+    var lang_num = 0;
+    var sql_command = "";
+    //En kr cn th
+    if (lang === "KR"){
+        lang_num = 1
+        sql_command = `SELECT cart.CartID , menulist.KR_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 2 AND cart.status = 1`;
+    }
+    else if (lang === "CN"){
+        lang_num = 2
+        sql_command = `SELECT cart.CartID , menulist.CN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 2 AND cart.status = 1`;
+    }
+    else if (lang === "TH"){
+        sql_command = `SELECT cart.CartID , menulist.TH_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 2 AND cart.status = 1`;
+        lang_num = 3
+    }else{
+        lang_num = 0;
+        sql_command = `SELECT cart.CartID , menulist.EN_Name AS Name , cart.jsOption AS optional , cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE menulist.Type = 2 AND cart.status = 1`;
+    }
+    const ch = await getdatafromsql(sql_command);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
+
+    res.send(parsedX);
+
+});
+
+
+app.post('/serve_bar',async (req, res) => {
+    const lang = req.body.lang;
+    //const cart = req.body.cartID;
+    var lang_num = 0;
+    var sql_command = "";
+    //En kr cn th
+    if (lang === "KR"){
+        lang_num = 1
+        sql_command = `SELECT cart.CartID , menulist.KR_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
+    }
+    else if (lang === "CN"){
+        lang_num = 2
+        sql_command = `SELECT cart.CartID , menulist.CN_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
+    }
+    else if (lang === "TH"){
+        sql_command = `SELECT cart.CartID , menulist.TH_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
+        lang_num = 3
+    }else{
+        lang_num = 0;
+        sql_command = `SELECT cart.CartID , menulist.EN_Name AS Name , cart.jsOption AS optional ,cart.TableID, cart.Amount FROM cart INNER JOIN menulist ON cart.MenuID = menulist.MenuID WHERE cart.status = 2`;
+    }
+    const ch = await getdatafromsql(sql_command);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.optional);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, optional: jsonArray[lang_num] };
+    });
+
+    res.send(parsedX);
+
+});
+
+app.post('/addcart',async (req, res) => {
     const MenuID = req.body.MenuID;
     const Table = req.body.Table;
     const amount = req.body.Amount;
     const op = req.body.Option;
     var option_select = "";
     var first_append = true;
+    
+    // var string_option = "";
     op.forEach(op => {
         if (op.status == 1) {
             if (first_append) {
@@ -232,11 +294,18 @@ app.post('/addcart', (req, res) => {
         }
         // console.log(`OptionID: ${op.OptionID}, Description: ${op.Description}, Status: ${op.status}`);
     });
-    var sql = `INSERT INTO cart(TableID,MenuID, OptionID,Amount) VALUES (${Table},${MenuID},"${option_select}",${amount})`;
+    const string_option = await getOptionall(option_select);
+    // console.log(string_option);
+    const stoption = JSON.parse(string_option)
+    const objectsArray = stoption.map(item => JSON.parse(item));
+    const jsonString = JSON.stringify(objectsArray);
+    console.log(string_option);
+    
+    var sql = `INSERT INTO cart(TableID,MenuID, jsOption,Amount) VALUES (${Table},${MenuID},?,${amount})`;
 
     try {
         // console.log(sql);
-        connection.query(sql, (err, results) => {
+        connection.query(sql,jsonString, (err, results) => {
             if (err) {
                 res.send(err)
             }
@@ -379,6 +448,90 @@ app.post('/getoptionbyID', (req, res) => {
 
 
 
+async function getOptionall(optionID){
+    var stringoption = "";
+    var list_option = []
+    var result_f;
+    
+    try {
+        const resolve = await getOptionfromID("SELECT `Description_EN` AS Description FROM `optionaltable` WHERE `OptionID` IN (" + String(optionID) + ")");
+        // stringoption = stringoption+JSON.stringify(resolve) ;
+        list_option.push(resolve);
+    }catch(error){
+        const resolve = [];
+        list_option.push(resolve);
+    }
+    try {
+        const resolve = await getOptionfromID("SELECT `Description_KR` AS Description FROM `optionaltable` WHERE `OptionID` IN (" + String(optionID) + ")");
+        list_option.push(resolve);
+    }catch(error){
+        const resolve = [];
+        list_option.push(resolve);
+    }
+    try {
+        const resolve = await getOptionfromID("SELECT `Description_CN` AS Description FROM `optionaltable` WHERE `OptionID` IN (" + String(optionID) + ")");
+        // stringoption = stringoption+JSON.stringify(resolve) ;
+        list_option.push(resolve);
+    }catch(error){
+        const resolve = [];
+        list_option.push(resolve);
+    }
+    try {
+        const resolve = await getOptionfromID("SELECT `Description_TH` AS Description FROM `optionaltable` WHERE `OptionID` IN (" + String(optionID) + ")");
+        list_option.push(resolve);
+    }catch(error){
+        const resolve = [];
+        list_option.push(resolve);
+    }
+    stringoption = JSON.stringify(list_option);
+    //console.log(stringoption);
+    return stringoption;
+}
+
+
+
+async function getOptionfromID(sql_command_ID){
+    return( new Promise((resolve,rejects) =>{
+        connection.query(sql_command_ID,(err,results) =>{
+            if (err) {
+                // console.error('Error executing query:', error);
+                rejects("[]"); // Reject the Promise with the error
+            } else {
+                const resultValue = results;
+                // console.log('Result:', resultValue);
+                console.log(JSON.stringify(resultValue));
+                // console.log(resultValue);
+                resolve (JSON.stringify(resultValue));
+            }
+
+    })
+    })
+        
+    )
+}
+
+async function getdatafromsql(sql_command_ID){
+    return( new Promise((resolve,rejects) =>{
+        connection.query(sql_command_ID,(err,results) =>{
+            if (err) {
+                // console.error('Error executing query:', error);
+                rejects("[]"); // Reject the Promise with the error
+            } else {
+                const resultValue = results;
+                // console.log('Result:', resultValue);
+                // console.log(JSON.stringify(resultValue));
+                // console.log(resultValue);
+                resolve (resultValue);
+            }
+
+    })
+    })
+        
+    )
+}
+
+
+
 function processOrder(order, table) {
     var sql = `UPDATE cart SET OrderID = ${order} , status = 1 WHERE OrderID = 1 AND TableID = ${table}`;
     var pass;
@@ -397,6 +550,23 @@ function processOrder(order, table) {
     }
 }
 
+
+
+app.post('/test',async (req,res) =>{
+    const cart = req.body.cartID;
+    const ch = await getdatafromsql(`SELECT * FROM cart WHERE CartID = ${cart}`);
+    // console.log(ch)
+    const parsedX = ch.map(item => {
+        // Parse the string into an array of JSON strings
+        const jsonArray = JSON.parse(item.jsOption);
+        // console.log(jsonArray)
+        // Parse each JSON string into an object
+        // Update the item with the parsed array of objects
+        return { ...item, jsOption: jsonArray[1] };
+    });
+
+    res.send(parsedX);
+})
 
 
 
